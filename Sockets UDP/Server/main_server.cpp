@@ -38,7 +38,7 @@ void server(int port)
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != NO_ERROR)
 	{
-		printWSErrorAndExit("ERROR WSAStartup: ");
+		printWSErrorAndExit("SERVER -> ERROR WSAStartup: ");
 	}
 
 	// TODO-2: Create socket (IPv4, datagrams, UDP
@@ -49,7 +49,7 @@ void server(int port)
 	iResult = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)& enable, sizeof(int));
 	if (iResult == SOCKET_ERROR)
 	{
-		printWSErrorAndExit("ERROR setsockopt: ");
+		printWSErrorAndExit("SERVER -> ERROR setsockopt: ");
 	}
 
 	// TODO-4: Bind to a local address
@@ -62,7 +62,7 @@ void server(int port)
 	iResult = bind(s, (const struct sockaddr*) & sAddress, sizeof(sAddress));
 	if (iResult != NO_ERROR)
 	{
-		printWSErrorAndExit("ERROR bind: ");
+		printWSErrorAndExit("SERVER -> ERROR bind: ");
 	}
 
 	while (true)
@@ -70,23 +70,23 @@ void server(int port)
 		// TODO-5:
 		// - Receive 'ping' packet from a remote host
 		// - Receive 'pong' packet from the server
-		char* buf_ping = "PING";
+		char buf_ping[10];
 		int flags = 0;
 		int sizeOfAddress = sizeof(sAddress);
-		iResult = recvfrom(s, buf_ping, strlen(buf_ping) + 1, flags, (struct sockaddr*) & sAddress, &sizeOfAddress);
-		if (iResult != NO_ERROR)
+		iResult = recvfrom(s, buf_ping, sizeof(char) * 10, flags, (struct sockaddr*) & sAddress, &sizeOfAddress);
+		if (iResult == 0)
 		{
-			printWSErrorAndExit("ERROR recvfrom: ");
+			printWSErrorAndExit("SERVER -> ERROR recvfrom: ");
 		}
 
-		std::cout << buf_ping << "/n";
+		std::cout << buf_ping << std::endl;
 
 		// - Answer with a 'pong' packet
-		char buf_pong[5];
-		iResult = sendto(s, buf_pong, sizeof(char) * 5, flags, (const struct sockaddr*) & sAddress, sizeof(sAddress));
-		if (iResult != NO_ERROR)
+		std::string buf_pong = "PONG";
+		iResult = sendto(s, buf_pong.c_str(), strlen(buf_pong.c_str()), flags, (const struct sockaddr*) & sAddress, sizeof(sAddress));
+		if (iResult == 0)
 		{
-			printWSErrorAndExit("ERROR sendto: ");
+			printWSErrorAndExit("SERVER -> ERROR sendto: ");
 		}
 
 		// - Control errors in both cases
@@ -95,14 +95,14 @@ void server(int port)
 	// TODO-6: Close socket
 	iResult = closesocket(s);
 	{
-		printWSErrorAndExit("ERROR closesocket: ");
+		printWSErrorAndExit("SERVER -> ERROR closesocket: ");
 	}
 
 	// TODO-7: Winsock shutdown
 	iResult = WSACleanup();
 	if (iResult != NO_ERROR)
 	{
-		printWSErrorAndExit("ERROR WSACleanup: ");
+		printWSErrorAndExit("SERVER -> ERROR WSACleanup: ");
 	}
 }
 

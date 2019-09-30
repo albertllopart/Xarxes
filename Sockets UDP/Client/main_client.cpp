@@ -40,7 +40,7 @@ void client(const char *serverAddrStr, int port)
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != NO_ERROR)
 	{
-		printWSErrorAndExit("ERROR WSAStartup: ");
+		printWSErrorAndExit("CLIENT -> ERROR WSAStartup: ");
 	}
 	
 	// TODO-2: Create socket (IPv4, datagrams, UDP)
@@ -56,45 +56,45 @@ void client(const char *serverAddrStr, int port)
 	iResult = bind(s, (const struct sockaddr*) & sAddress, sizeof(sAddress));
 	if (iResult != NO_ERROR)
 	{
-		printWSErrorAndExit("ERROR bind: ");
+		printWSErrorAndExit("CLIENT -> ERROR bind: ");
 	}
 
 	while (true)
 	{
 		// TODO-4:
 		// - Send a 'ping' packet to the server
-		const char *buf_ping = "PING";
+		std::string buf_ping = "PING";
 		int flags = 0;
-		iResult = sendto(s, buf_ping, strlen(buf_ping) + 1, flags, (const struct sockaddr*)&sAddress, sizeof(sAddress));
-		if (iResult != NO_ERROR)
+		iResult = sendto(s, buf_ping.c_str(), strlen(buf_ping.c_str()) + 1, flags, (const struct sockaddr*)&sAddress, sizeof(sAddress));
+		if (iResult == 0)
 		{
-			printWSErrorAndExit("ERROR sendto: ");
+			printWSErrorAndExit("CLIENT -> ERROR sendto: ");
 		}
 
 		// - Receive 'pong' packet from the server
-		char* buf_pong = nullptr;
+		char buf_pong[10];
 		int sizeOfAddress = sizeof(sAddress);
-		iResult = recvfrom(s, buf_pong, strlen(buf_pong) + 1, flags, (struct sockaddr*)&sAddress, &sizeOfAddress);
-		if (iResult != NO_ERROR)
+		iResult = recvfrom(s, buf_pong, sizeof(char) * 10, flags, (struct sockaddr*)&sAddress, &sizeOfAddress);
+		if (iResult == 0)
 		{
-			printWSErrorAndExit("ERROR recvfrom: ");
+			printWSErrorAndExit("CLIENT -> ERROR recvfrom: ");
 		}
 
 		// - Control errors in both cases
-		std::cout << buf_pong << "/n";
+		std::cout << buf_pong << std::endl;
 	}
 
 	// TODO-5: Close socket
 	iResult = closesocket(s);
 	{
-		printWSErrorAndExit("ERROR closesocket: ");
+		printWSErrorAndExit("CLIENT -> ERROR closesocket: ");
 	}
 
 	// TODO-6: Winsock shutdown
 	iResult = WSACleanup();
 	if (iResult != NO_ERROR)
 	{
-		printWSErrorAndExit("ERROR WSACleanup: ");
+		printWSErrorAndExit("CLIENT -> ERROR WSACleanup: ");
 	}
 }
 
