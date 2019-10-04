@@ -52,6 +52,9 @@ void client(const char *serverAddrStr, int port)
 	sAddress.sin_port = SERVER_PORT;
 	inet_pton(AF_INET, SERVER_ADDRESS, &sAddress.sin_addr);
 
+	// From address (will come from server)
+	sockaddr fromAddr;
+
 	//BIND
 	iResult = bind(s, (const struct sockaddr*) & sAddress, sizeof(sAddress));
 	if (iResult != NO_ERROR)
@@ -65,17 +68,17 @@ void client(const char *serverAddrStr, int port)
 		// - Send a 'ping' packet to the server
 		std::string buf_ping = "PING";
 		int flags = 0;
-		iResult = sendto(s, buf_ping.c_str(), strlen(buf_ping.c_str()) + 1, flags, (const struct sockaddr*)&sAddress, sizeof(sAddress));
-		if (iResult == 0)
+		iResult = sendto(s, buf_ping.c_str(), strlen(buf_ping.c_str())+1, flags, (const struct sockaddr*)&sAddress, sizeof(sAddress));
+		if (iResult == SOCKET_ERROR)
 		{
 			printWSErrorAndExit("CLIENT -> ERROR sendto: ");
 		}
 
 		// - Receive 'pong' packet from the server
 		char buf_pong[10];
-		int sizeOfAddress = sizeof(sAddress);
-		iResult = recvfrom(s, buf_pong, sizeof(char) * 10, flags, (struct sockaddr*)&sAddress, &sizeOfAddress);
-		if (iResult == 0)
+		int fromAddrLen = sizeof(fromAddr);
+		iResult = recvfrom(s, buf_pong, sizeof(char) * 10, flags, &fromAddr, &fromAddrLen);
+		if (iResult == SOCKET_ERROR)
 		{
 			printWSErrorAndExit("CLIENT -> ERROR recvfrom: ");
 		}

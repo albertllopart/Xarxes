@@ -8,7 +8,7 @@ void ModuleTaskManager::threadMain()
 		Task* temp = nullptr;
 		{ 
 			std::unique_lock<std::mutex> lock(mtx); 
-			while (scheduledTasks.empty()) {
+			while (scheduledTasks.empty()) { //COMPROVAR FLAG
 				event.wait(lock); 
 			}
 			temp = scheduledTasks.front();
@@ -54,6 +54,7 @@ bool ModuleTaskManager::update()
 bool ModuleTaskManager::cleanUp()
 {
 	// TODO 5: Notify all threads to finish and join them
+	// TODO protect this
 	exitFlag = true;
 	event.notify_all();
 

@@ -65,16 +65,22 @@ void server(int port)
 		printWSErrorAndExit("SERVER -> ERROR bind: ");
 	}
 
+	// From address (client)
+	sockaddr fromAddr;
+	int fromAddrLen = sizeof(fromAddr);
+
 	while (true)
 	{
+		// Input buffer
+		const int inBufferLen = 1300;
+		char buf_ping[inBufferLen];
 		// TODO-5:
 		// - Receive 'ping' packet from a remote host
 		// - Receive 'pong' packet from the server
-		char buf_ping[10];
 		int flags = 0;
 		int sizeOfAddress = sizeof(sAddress);
 		iResult = recvfrom(s, buf_ping, sizeof(char) * 10, flags, (struct sockaddr*) & sAddress, &sizeOfAddress);
-		if (iResult == 0)
+		if (iResult == SOCKET_ERROR)
 		{
 			printWSErrorAndExit("SERVER -> ERROR recvfrom: ");
 		}
@@ -83,8 +89,8 @@ void server(int port)
 
 		// - Answer with a 'pong' packet
 		std::string buf_pong = "PONG";
-		iResult = sendto(s, buf_pong.c_str(), strlen(buf_pong.c_str()), flags, (const struct sockaddr*) & sAddress, sizeof(sAddress));
-		if (iResult == 0)
+		iResult = sendto(s, buf_pong.c_str(), strlen(buf_pong.c_str()), flags, (sockaddr*)& fromAddr, fromAddrLen);
+		if (iResult == SOCKET_ERROR)
 		{
 			printWSErrorAndExit("SERVER -> ERROR sendto: ");
 		}
