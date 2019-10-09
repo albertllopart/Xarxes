@@ -13,12 +13,6 @@
 
 #define PAUSE_AND_EXIT() system("pause"); exit(-1)
 
-enum Protocol
-{
-	UDP,
-	TCP
-};
-
 void printWSErrorAndExit(const char *msg)
 {
 	wchar_t *s = NULL;
@@ -33,37 +27,51 @@ void printWSErrorAndExit(const char *msg)
 
 void server(int port)
 {
-	// TODO-1: Winsock init
-	WSAData wsaData;
-	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != NO_ERROR)
-	{
-		printWSErrorAndExit("SERVER -> ERROR WSAStartup: ");
+	// Winsock init
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
+		printWSErrorAndExit("WSAStartup");
 	}
+	std::cout << "WSAStartup done" << std::endl;
 
-	// TODO-2: Create socket (IPv4, datagrams, UDP
-	SOCKET s = socket(AF_INET, SOCK_DGRAM, UDP);
+	// Create socket (IPv4, datagrams, UDP
+	SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
+	if (s == INVALID_SOCKET) {
+		printWSErrorAndExit("socket");
+	}
+	std::cout << "socket done" << std::endl;
 
-	// TODO-3: Force address reuse
+	// Reuse address
 	int enable = 1;
-	iResult = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)& enable, sizeof(int));
-	if (iResult == SOCKET_ERROR)
-	{
-		printWSErrorAndExit("SERVER -> ERROR setsockopt: ");
+	int result = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&enable, sizeof(int));
+	if (result == SOCKET_ERROR) {
+		printWSErrorAndExit("setsockopt");
 	}
+	std::cout << "setsockopt SO_REUSEADDR done" << std::endl;
 
-	// TODO-4: Bind to a local address
-	struct sockaddr_in sAddress;
-	sAddress.sin_family = AF_INET; // IPv4
-	sAddress.sin_port = htons(port); // Port
-	sAddress.sin_addr.S_un.S_addr = INADDR_ANY; // Any local IP address
+	// Address (server)
+	struct sockaddr_in serverAddr;
+	serverAddr.sin_family = AF_INET; // IPv4
+	serverAddr.sin_addr.S_un.S_addr = INADDR_ANY; // Any address, will be localhost
+	serverAddr.sin_port = htons(port); // Port
 
-	//BIND
-	iResult = bind(s, (const struct sockaddr*) & sAddress, sizeof(sAddress));
-	if (iResult != NO_ERROR)
-	{
-		printWSErrorAndExit("SERVER -> ERROR bind: ");
+	// Bind socket
+	int bindRes = bind(s, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+	if (bindRes == SOCKET_ERROR) {
+		printWSErrorAndExit("bind");
 	}
+	std::cout << "bind done on port " << port << std::endl;
+
+	// Server string
+	std::string pongString("Pong");
+
+	// Input buffer
+	const int inBufferLen = 1300;
+	char inBuffer[inBufferLen];
+
+	// From address (client)
+	struct sockaddr fromAddr;
+	int fromAddrLen = sizeof(fromAddr);
 
 	// From address (client)
 	sockaddr fromAddr;
@@ -71,6 +79,13 @@ void server(int port)
 
 	while (true)
 	{
+<<<<<<< HEAD
+		std::cout << "Waiting for client data... " << std::flush;
+
+		// Receive
+		int bytes = recvfrom(s, inBuffer, inBufferLen, 0, &fromAddr, &fromAddrLen);
+		if (bytes >= 0)
+=======
 		// Input buffer
 		const int inBufferLen = 1300;
 		char buf_ping[inBufferLen];
@@ -81,35 +96,39 @@ void server(int port)
 		int sizeOfAddress = sizeof(sAddress);
 		iResult = recvfrom(s, buf_ping, sizeof(char) * 10, flags, (struct sockaddr*) & sAddress, &sizeOfAddress);
 		if (iResult == SOCKET_ERROR)
+>>>>>>> origin/master
 		{
-			printWSErrorAndExit("SERVER -> ERROR recvfrom: ");
+			std::cout << "Received: " << inBuffer << std::endl;
+
+			// Wait 1 second
+			Sleep(1000);
+
+			// Send
+			bytes = sendto(s, pongString.c_str(), (int)pongString.size() + 1, 0, (sockaddr*)&fromAddr, fromAddrLen);
+			if (bytes == SOCKET_ERROR) {
+				printWSErrorAndExit("sendto");
+			}
+
+<<<<<<< HEAD
+			std::cout << "Sent: '" << pongString.c_str() << "' sent" << std::endl;
 		}
-
-		std::cout << buf_ping << std::endl;
-
+		else
+=======
 		// - Answer with a 'pong' packet
 		std::string buf_pong = "PONG";
 		iResult = sendto(s, buf_pong.c_str(), strlen(buf_pong.c_str()), flags, (sockaddr*)& fromAddr, fromAddrLen);
 		if (iResult == SOCKET_ERROR)
+>>>>>>> origin/master
 		{
-			printWSErrorAndExit("SERVER -> ERROR sendto: ");
+			printWSErrorAndExit("recvfrom");
 		}
-
-		// - Control errors in both cases
 	}
 
-	// TODO-6: Close socket
-	iResult = closesocket(s);
-	{
-		printWSErrorAndExit("SERVER -> ERROR closesocket: ");
-	}
+	// Close socket
+	closesocket(s);
 
-	// TODO-7: Winsock shutdown
-	iResult = WSACleanup();
-	if (iResult != NO_ERROR)
-	{
-		printWSErrorAndExit("SERVER -> ERROR WSACleanup: ");
-	}
+	// Winsock shutdown
+	WSACleanup();
 }
 
 int main(int argc, char **argv)
