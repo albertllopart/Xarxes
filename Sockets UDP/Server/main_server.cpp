@@ -73,13 +73,30 @@ void server(int port)
 	struct sockaddr fromAddr;
 	int fromAddrLen = sizeof(fromAddr);
 
+	// From address (client)
+	sockaddr fromAddr;
+	int fromAddrLen = sizeof(fromAddr);
+
 	while (true)
 	{
+<<<<<<< HEAD
 		std::cout << "Waiting for client data... " << std::flush;
 
 		// Receive
 		int bytes = recvfrom(s, inBuffer, inBufferLen, 0, &fromAddr, &fromAddrLen);
 		if (bytes >= 0)
+=======
+		// Input buffer
+		const int inBufferLen = 1300;
+		char buf_ping[inBufferLen];
+		// TODO-5:
+		// - Receive 'ping' packet from a remote host
+		// - Receive 'pong' packet from the server
+		int flags = 0;
+		int sizeOfAddress = sizeof(sAddress);
+		iResult = recvfrom(s, buf_ping, sizeof(char) * 10, flags, (struct sockaddr*) & sAddress, &sizeOfAddress);
+		if (iResult == SOCKET_ERROR)
+>>>>>>> origin/master
 		{
 			std::cout << "Received: " << inBuffer << std::endl;
 
@@ -92,9 +109,16 @@ void server(int port)
 				printWSErrorAndExit("sendto");
 			}
 
+<<<<<<< HEAD
 			std::cout << "Sent: '" << pongString.c_str() << "' sent" << std::endl;
 		}
 		else
+=======
+		// - Answer with a 'pong' packet
+		std::string buf_pong = "PONG";
+		iResult = sendto(s, buf_pong.c_str(), strlen(buf_pong.c_str()), flags, (sockaddr*)& fromAddr, fromAddrLen);
+		if (iResult == SOCKET_ERROR)
+>>>>>>> origin/master
 		{
 			printWSErrorAndExit("recvfrom");
 		}

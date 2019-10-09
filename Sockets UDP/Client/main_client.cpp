@@ -34,12 +34,33 @@ void client(const char *serverAddrStr, int port)
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
 		printWSErrorAndExit("WSAStartup");
 	}
+<<<<<<< HEAD
 	std::cout << "WSAStartup done" << std::endl;
 
 	// Create socket (IPv4, datagrams, UDP
 	SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
 	if (s == INVALID_SOCKET) {
 		printWSErrorAndExit("socket");
+=======
+	
+	// TODO-2: Create socket (IPv4, datagrams, UDP)
+	SOCKET s = socket(AF_INET, SOCK_DGRAM, UDP);
+
+	// TODO-3: Create an address object with the server address
+	sockaddr_in sAddress;
+	sAddress.sin_family = AF_INET;
+	sAddress.sin_port = SERVER_PORT;
+	inet_pton(AF_INET, SERVER_ADDRESS, &sAddress.sin_addr);
+
+	// From address (will come from server)
+	sockaddr fromAddr;
+
+	//BIND
+	iResult = bind(s, (const struct sockaddr*) & sAddress, sizeof(sAddress));
+	if (iResult != NO_ERROR)
+	{
+		printWSErrorAndExit("CLIENT -> ERROR bind: ");
+>>>>>>> origin/master
 	}
 	std::cout << "socket done" << std::endl;
 
@@ -62,12 +83,22 @@ void client(const char *serverAddrStr, int port)
 
 	while (true)
 	{
+<<<<<<< HEAD
 		// Send
 		int bytes = sendto(s, pingString.c_str(), (int)pingString.size() + 1, 0, (sockaddr*)&serverAddr, serverAddrLen);
 		if (bytes >= 0)
+=======
+		// TODO-4:
+		// - Send a 'ping' packet to the server
+		std::string buf_ping = "PING";
+		int flags = 0;
+		iResult = sendto(s, buf_ping.c_str(), strlen(buf_ping.c_str())+1, flags, (const struct sockaddr*)&sAddress, sizeof(sAddress));
+		if (iResult == SOCKET_ERROR)
+>>>>>>> origin/master
 		{
 			std::cout << "Sent: " << pingString.c_str() << std::endl;
 
+<<<<<<< HEAD
 			std::cout << "Waiting for server data... " << std::flush;
 
 			// Receive
@@ -83,6 +114,13 @@ void client(const char *serverAddrStr, int port)
 			Sleep(1000);
 		}
 		else
+=======
+		// - Receive 'pong' packet from the server
+		char buf_pong[10];
+		int fromAddrLen = sizeof(fromAddr);
+		iResult = recvfrom(s, buf_pong, sizeof(char) * 10, flags, &fromAddr, &fromAddrLen);
+		if (iResult == SOCKET_ERROR)
+>>>>>>> origin/master
 		{
 			printWSErrorAndExit("sendto");
 		}
