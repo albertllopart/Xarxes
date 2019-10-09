@@ -7,12 +7,29 @@ bool  ModuleNetworkingClient::start(const char * serverAddressStr, int serverPor
 
 	// TODO(jesus): TCP connection stuff
 	// - Create the socket
+	s = socket(AF_INET, SOCK_STREAM, 0);
+	if (s == INVALID_SOCKET) {
+		ELOG("socket()");
+	}
+	LOG("socket done");
 	// - Create the remote address object
-	// - Connect to the remote address
-	// - Add the created socket to the managed list of sockets using addSocket()
+	struct sockaddr_in serverAddr;
+	const int serverAddrLen = sizeof(serverAddr);
+	serverAddr.sin_family = AF_INET; // IPv4
+	inet_pton(AF_INET, serverAddressStr, &serverAddr.sin_addr);
+	serverAddr.sin_port = htons(serverPort); // Port
 
+	// - Connect to the remote address
+	int connectRes = connect(s, (const sockaddr*)&serverAddr, serverAddrLen);
+	if (connectRes == SOCKET_ERROR) {
+		ELOG("connect");
+	}
+	LOG("connect done");
+	// - Add the created socket to the managed list of sockets using addSocket()
+	addSocket(s);
 	// If everything was ok... change the state
 	state = ClientState::Start;
+	LOG("everything ok, changing state...");
 
 	return true;
 }
@@ -27,6 +44,8 @@ bool ModuleNetworkingClient::update()
 	if (state == ClientState::Start)
 	{
 		// TODO(jesus): Send the player name to the server
+		send(s, playerName.c_str(), (int)playerName.size() + 1, 0);
+		LOG("Sent %s to the server", playerName.c_str());
 	}
 
 	return true;
