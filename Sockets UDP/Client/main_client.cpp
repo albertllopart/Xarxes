@@ -15,12 +15,6 @@
 
 #define PAUSE_AND_EXIT() system("pause"); exit(-1)
 
-enum Protocol
-{
-	UDP,
-	TCP
-};
-
 void printWSErrorAndExit(const char *msg)
 {
 	wchar_t *s = NULL;
@@ -35,67 +29,70 @@ void printWSErrorAndExit(const char *msg)
 
 void client(const char *serverAddrStr, int port)
 {
-	// TODO-1: Winsock init
-	WSAData wsaData;
-	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != NO_ERROR)
-	{
-		printWSErrorAndExit("CLIENT -> ERROR WSAStartup: ");
+	// Winsock init
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
+		printWSErrorAndExit("WSAStartup");
 	}
-	
-	// TODO-2: Create socket (IPv4, datagrams, UDP)
-	SOCKET s = socket(AF_INET, SOCK_DGRAM, UDP);
+	std::cout << "WSAStartup done" << std::endl;
 
-	// TODO-3: Create an address object with the server address
-	sockaddr_in sAddress;
-	sAddress.sin_family = AF_INET;
-	sAddress.sin_port = SERVER_PORT;
-	inet_pton(AF_INET, SERVER_ADDRESS, &sAddress.sin_addr);
-
-	//BIND
-	iResult = bind(s, (const struct sockaddr*) & sAddress, sizeof(sAddress));
-	if (iResult != NO_ERROR)
-	{
-		printWSErrorAndExit("CLIENT -> ERROR bind: ");
+	// Create socket (IPv4, datagrams, UDP
+	SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
+	if (s == INVALID_SOCKET) {
+		printWSErrorAndExit("socket");
 	}
+	std::cout << "socket done" << std::endl;
+
+	// Client string
+	std::string pingString("Ping");
+
+	// Server Address
+	struct sockaddr_in serverAddr;
+	const int serverAddrLen = sizeof(serverAddr);
+	serverAddr.sin_family = AF_INET; // IPv4
+	inet_pton(AF_INET, serverAddrStr, &serverAddr.sin_addr);
+	serverAddr.sin_port = htons(port); // Port
+
+	// From address (will come from server)
+	struct sockaddr fromAddr;
+
+	// Input buffer
+	const int inBufferLen = 1300;
+	char inBuffer[inBufferLen];
 
 	while (true)
 	{
-		// TODO-4:
-		// - Send a 'ping' packet to the server
-		std::string buf_ping = "PING";
-		int flags = 0;
-		iResult = sendto(s, buf_ping.c_str(), strlen(buf_ping.c_str()) + 1, flags, (const struct sockaddr*)&sAddress, sizeof(sAddress));
-		if (iResult == 0)
+		// Send
+		int bytes = sendto(s, pingString.c_str(), (int)pingString.size() + 1, 0, (sockaddr*)&serverAddr, serverAddrLen);
+		if (bytes >= 0)
 		{
-			printWSErrorAndExit("CLIENT -> ERROR sendto: ");
-		}
+			std::cout << "Sent: " << pingString.c_str() << std::endl;
 
-		// - Receive 'pong' packet from the server
-		char buf_pong[10];
-		int sizeOfAddress = sizeof(sAddress);
-		iResult = recvfrom(s, buf_pong, sizeof(char) * 10, flags, (struct sockaddr*)&sAddress, &sizeOfAddress);
-		if (iResult == 0)
+			std::cout << "Waiting for server data... " << std::flush;
+
+			// Receive
+			int fromAddrLen = sizeof(fromAddr);
+			bytes = recvfrom(s, inBuffer, inBufferLen, 0, &fromAddr, &fromAddrLen);
+			if (bytes == SOCKET_ERROR) {
+				printWSErrorAndExit("recvfrom");
+			}
+
+			std::cout << "Received: " << inBuffer << std::endl;
+
+			// Wait 1 second
+			Sleep(1000);
+		}
+		else
 		{
-			printWSErrorAndExit("CLIENT -> ERROR recvfrom: ");
+			printWSErrorAndExit("sendto");
 		}
-
-		// - Control errors in both cases
-		std::cout << buf_pong << std::endl;
 	}
 
-	// TODO-5: Close socket
-	iResult = closesocket(s);
-	{
-		printWSErrorAndExit("CLIENT -> ERROR closesocket: ");
-	}
+	// Close socket
+	closesocket(s);
 
-	// TODO-6: Winsock shutdown
-	iResult = WSACleanup();
-	if (iResult != NO_ERROR)
-	{
-		printWSErrorAndExit("CLIENT -> ERROR WSACleanup: ");
-	}
+	// Winsock shutdown
+	WSACleanup();
 }
 
 int main(int argc, char **argv)
