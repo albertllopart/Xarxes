@@ -1,6 +1,6 @@
 #include "Networks.h"
 #include "ModuleNetworking.h"
-
+#include <list>
 
 static uint8 NumModulesUsingWinsock = 0;
 
@@ -82,7 +82,7 @@ bool ModuleNetworking::preUpdate()
 	if (res == SOCKET_ERROR) {
 		ELOG("SELECT SOCKET ERROR");
 	}
-
+	
 	// TODO(jesus): for those sockets selected, check wheter or not they are
 	// a listen socket or a standard socket and perform the corresponding
 	// operation (accept() an incoming connection or recv() incoming data,
@@ -92,6 +92,21 @@ bool ModuleNetworking::preUpdate()
 	// connected socket to the managed list of sockets.
 	// On recv() success, communicate the incoming data received to the
 	// subclass (use the callback onSocketReceivedData()).
+	// Fill this array with disconnected sockets
+	std::list<SOCKET> disconnectedSockets;
+	// Read selected sockets
+	for (auto s : sockets)
+	{
+		if (FD_ISSET(s, &readfds)) {
+			if (s == /*serverSocket*/) { // Is the server socket
+			// Accept stuff
+			
+			}
+			else { // Is a client socket
+		 // Recv stuff
+			}
+		}
+	}
 
 	// TODO(jesus): handle disconnections. Remember that a socket has been
 	// disconnected from its remote end either when recv() returned 0,
