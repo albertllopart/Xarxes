@@ -119,7 +119,6 @@ bool ModuleNetworkingServer::gui()
 				ntohs(connectedSocket.address.sin_port));
 			ImGui::Text("Player name: %s", connectedSocket.playerName.c_str());
 		}
-
 		ImGui::End();
 	}
 
@@ -137,7 +136,7 @@ bool ModuleNetworkingServer::isListenSocket(SOCKET socket) const
 	return socket == listenSocket;
 }
 
-void ModuleNetworkingServer::onSocketConnected(SOCKET socket, const sockaddr_in &socketAddress)
+void ModuleNetworkingServer::onSocketConnected(SOCKET socket, const sockaddr_in& socketAddress)
 {
 	// Add a new connected socket to the list
 	ConnectedSocket connectedSocket;

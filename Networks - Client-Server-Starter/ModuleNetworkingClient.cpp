@@ -26,6 +26,8 @@ bool  ModuleNetworkingClient::start(const char * serverAddressStr, int serverPor
 	LOG("connect done");
 	// - Add the created socket to the managed list of sockets using addSocket()
 	addSocket(socket);
+	
+		//onSocketConnected(socket,)
 	// If everything was ok... change the state
 	state = ClientState::Start;
 	LOG("everything ok, changing state...");
@@ -45,7 +47,7 @@ bool ModuleNetworkingClient::update()
 		// TODO(jesus): Send the player name to the server
 		if (send(socket, playerName.c_str(), (int)playerName.size() + 1, 0) < 1)
 		{
-			ELOG("Player %S loggin failed", playerName.c_str());
+			ELOG("Player %S loggin notification failed", playerName.c_str());
 		}
 	}
 

@@ -63,6 +63,26 @@ bool ModuleNetworking::preUpdate()
 
 	// TODO(jesus): select those sockets that have a read operation available
 
+	// New socket set
+	fd_set readfds;
+	FD_ZERO(&readfds);
+
+	// Fill the set
+	for (auto s : sockets) {
+		FD_SET(s, &readfds);
+	}
+
+	// Timeout (return immediately)
+	struct timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
+
+	// Select (check for readability)
+	int res = select(0, &readfds, nullptr, nullptr, &timeout);
+	if (res == SOCKET_ERROR) {
+		ELOG("SELECT SOCKET ERROR");
+	}
+
 	// TODO(jesus): for those sockets selected, check wheter or not they are
 	// a listen socket or a standard socket and perform the corresponding
 	// operation (accept() an incoming connection or recv() incoming data,
