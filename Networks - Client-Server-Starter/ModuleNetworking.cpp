@@ -98,7 +98,7 @@ bool ModuleNetworking::preUpdate()
 	for (auto s : sockets)
 	{
 		if (FD_ISSET(s, &readfds)) {
-			if (s == /*serverSocket*/) { // Is the server socket
+			if (isListenSocket(s)) { // Is the server socket
 			// Accept stuff
 			
 			}
