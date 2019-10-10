@@ -81,39 +81,99 @@ bool ModuleNetworking::preUpdate()
 	int res = select(0, &readfds, nullptr, nullptr, &timeout);
 	if (res == SOCKET_ERROR) {
 		ELOG("SELECT SOCKET ERROR");
+		return false;
 	}
 	
 	// TODO(jesus): for those sockets selected, check wheter or not they are
 	// a listen socket or a standard socket and perform the corresponding
 	// operation (accept() an incoming connection or recv() incoming data,
 	// respectively).
+
+	for (int i = 0; i < readfds.fd_count; i++)
+	{
 	// On accept() success, communicate the new connected socket to the
 	// subclass (use the callback onSocketConnected()), and add the new
 	// connected socket to the managed list of sockets.
 	// On recv() success, communicate the incoming data received to the
 	// subclass (use the callback onSocketReceivedData()).
 	// Fill this array with disconnected sockets
-	std::list<SOCKET> disconnectedSockets;
-	// Read selected sockets
-	for (auto s : sockets)
-	{
-		if (FD_ISSET(s, &readfds)) {
-			if (isListenSocket(s)) { // Is the server socket
-			// Accept stuff
-			
+
+		SOCKET current = readfds.fd_array[i];
+
+		if (isListenSocket(current))
+		{
+			sockaddr_in bindAddr;
+			int fromlen = sizeof(bindAddr);
+
+			SOCKET client = accept(current, (sockaddr*)&bindAddr, &fromlen);
+
+			if (client == INVALID_SOCKET)
+			{
+				wchar_t* error = NULL;
+				FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+					NULL, WSAGetLastError(),
+					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+					(LPWSTR)&error, 0, NULL);
+
+				ELOG("Socket error: %ls", error);
+
+				continue;
 			}
-			else { // Is a client socket
-		 // Recv stuff
+
+			onSocketConnected(client, bindAddr);
+			sockets.push_back(client);
+
+		}
+		else
+		{
+			int recvSize = recv(current, (char*)incomingDataBuffer, incomingDataBufferSize, 0);
+			if (recvSize == SOCKET_ERROR)
+			{
+				int lastError = WSAGetLastError();
+
+				if (lastError == WSAEWOULDBLOCK)
+				{
+					// Do nothing special, there was no data to receive
+				}
+				else
+				{
+					WLOG("Socket disconnected");
+
+					onSocketDisconnected(current);
+
+					for (std::vector<SOCKET>::iterator it = sockets.begin(); it != sockets.end(); ++it)
+					{
+						if ((*it) == current)
+						{
+							sockets.erase(it);
+							break;
+						}
+					}
+					continue;
+				}
 			}
+			else if (recvSize == 0)
+			{
+				onSocketDisconnected(current);
+				for (std::vector<SOCKET>::iterator it = sockets.begin(); it != sockets.end(); ++it)
+				{
+					if ((*it) == current)
+					{
+						sockets.erase(it);
+						break;
+					}
+				}
+				continue;
+			}
+			else // Success
+			{
+				// Process received data
+				onSocketReceivedData(current, incomingDataBuffer);
+
+			}
+
 		}
 	}
-
-	// TODO(jesus): handle disconnections. Remember that a socket has been
-	// disconnected from its remote end either when recv() returned 0,
-	// or when it generated some errors such as ECONNRESET.
-	// Communicate detected disconnections to the subclass using the callback
-	// onSocketDisconnected().
-
 	// TODO(jesus): Finally, remove all disconnected sockets from the list
 	// of managed sockets.
 
