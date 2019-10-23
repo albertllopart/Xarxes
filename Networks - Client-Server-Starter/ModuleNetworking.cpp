@@ -126,8 +126,9 @@ bool ModuleNetworking::preUpdate()
 		}
 		else
 		{
-			int recvSize = recv(current, (char*)incomingDataBuffer, incomingDataBufferSize, 0);
-			if (recvSize == SOCKET_ERROR)
+			InputMemoryStream packet;
+			int bytesRead = recv(current, packet.GetBufferPtr(), packet.GetCapacity(), 0);
+			if (bytesRead == SOCKET_ERROR)
 			{
 				int lastError = WSAGetLastError();
 
@@ -152,7 +153,7 @@ bool ModuleNetworking::preUpdate()
 					continue;
 				}
 			}
-			else if (recvSize == 0)
+			else if (bytesRead == 0)
 			{
 				onSocketDisconnected(current);
 				for (std::vector<SOCKET>::iterator it = sockets.begin(); it != sockets.end(); ++it)
@@ -168,8 +169,8 @@ bool ModuleNetworking::preUpdate()
 			else // Success
 			{
 				// Process received data
-				onSocketReceivedData(current, incomingDataBuffer);
-
+				packet.SetSize(bytesRead);
+				onSocketReceivedData(current, packet);
 			}
 
 		}
