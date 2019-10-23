@@ -45,9 +45,18 @@ bool ModuleNetworkingClient::update()
 	if (state == ClientState::Start)
 	{
 		// TODO(jesus): Send the player name to the server
-		if (send(socket, playerName.c_str(), (int)playerName.size() + 1, 0) < 1)
+		OutputMemoryStream packet;
+		packet << ClientMessage::Hello;
+		packet << playerName;
+
+		if (sendPacket(packet, socket))
 		{
-			ELOG("Player %S loggin notification failed", playerName.c_str());
+			state = ClientState::Logging;
+		}
+		else
+		{
+			disconnect();
+			state = ClientState::Stopped;
 		}
 	}
 
