@@ -156,7 +156,7 @@ void ModuleNetworkingServer::onSocketReceivedData(SOCKET socket, const InputMemo
 		std::string playerName;
 		packet >> playerName;
 
-		for (auto& connectedSocket : connectedSockets)
+		for (auto& connectedSocket : connectedSockets)	
 		{
 			if (connectedSocket.socket == socket)
 			{

@@ -1,7 +1,6 @@
 #pragma once
 
-#include "MemoryStream.h"
-#include "Messages.h"
+
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -188,6 +187,8 @@ inline float fractionalPart(float number)
 // FRAMEWORK HEADERS
 ////////////////////////////////////////////////////////////////////////
 
+#include "MemoryStream.h"
+#include "Messages.h"
 #include "Module.h"
 #include "ModuleNetworking.h"
 #include "ModuleNetworkingClient.h"

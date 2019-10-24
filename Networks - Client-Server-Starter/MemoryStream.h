@@ -2,6 +2,7 @@
 
 #include "ByteSwap.h"
 
+
 enum class Endianness {
 	LittleEndian,
 	BigEndian
