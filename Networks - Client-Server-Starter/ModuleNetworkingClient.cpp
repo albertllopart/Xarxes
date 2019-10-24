@@ -76,6 +76,11 @@ bool ModuleNetworkingClient::gui()
 
 		ImGui::Text("%s connected to the server...", playerName.c_str());
 
+		if (ImGui::Button("Disconnect"))
+		{
+			disconnect();
+			onSocketDisconnected(socket);
+		}
 		ImGui::End();
 	}
 

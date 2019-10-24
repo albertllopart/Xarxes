@@ -24,6 +24,17 @@ void ModuleNetworking::reportError(const char* inOperationDesc)
 	ELOG("Error %s: %d- %s", inOperationDesc, errorNum, lpMsgBuf);
 }
 
+bool ModuleNetworking::sendPacket(const OutputMemoryStream& packet, SOCKET socket)
+{
+	int result = send(socket, packet.GetBufferPtr(), packet.GetSize(), 0);
+	if (result == SOCKET_ERROR)
+	{
+		reportError("Send");
+		return false;
+	}
+	return true;
+}
+
 void ModuleNetworking::disconnect()
 {
 	for (SOCKET socket : sockets)
@@ -73,49 +84,39 @@ bool ModuleNetworking::preUpdate()
 	}
 
 	// Timeout (return immediately)
-	struct timeval timeout;
+	TIMEVAL timeout;
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 
 	// Select (check for readability)
 	int res = select(0, &readfds, nullptr, nullptr, &timeout);
 	if (res == SOCKET_ERROR) {
-		ELOG("SELECT SOCKET ERROR");
+		ELOG("Error selecting sockets");
 		return false;
 	}
-	
+
+
 	// TODO(jesus): for those sockets selected, check wheter or not they are
 	// a listen socket or a standard socket and perform the corresponding
 	// operation (accept() an incoming connection or recv() incoming data,
 	// respectively).
-
 	for (int i = 0; i < readfds.fd_count; i++)
 	{
-	// On accept() success, communicate the new connected socket to the
-	// subclass (use the callback onSocketConnected()), and add the new
-	// connected socket to the managed list of sockets.
-	// On recv() success, communicate the incoming data received to the
-	// subclass (use the callback onSocketReceivedData()).
-	// Fill this array with disconnected sockets
+		SOCKET curr = readfds.fd_array[i];
 
-		SOCKET current = readfds.fd_array[i];
-
-		if (isListenSocket(current))
+		// On accept() success, communicate the new connected socket to the
+		// subclass (use the callback onSocketConnected()), and add the new
+		// connected socket to the managed list of sockets.
+		if (isListenSocket(curr))
 		{
 			sockaddr_in bindAddr;
 			int fromlen = sizeof(bindAddr);
 
-			SOCKET client = accept(current, (sockaddr*)&bindAddr, &fromlen);
+			SOCKET client = accept(curr, (sockaddr*)&bindAddr, &fromlen);
 
 			if (client == INVALID_SOCKET)
 			{
-				wchar_t* error = NULL;
-				FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-					NULL, WSAGetLastError(),
-					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					(LPWSTR)&error, 0, NULL);
-
-				ELOG("Socket error: %ls", error);
+				reportError("Socket error: %ls");
 
 				continue;
 			}
@@ -124,11 +125,13 @@ bool ModuleNetworking::preUpdate()
 			sockets.push_back(client);
 
 		}
+		// On recv() success, communicate the incoming data received to the
+		// subclass (use the callback onSocketReceivedData()).
 		else
 		{
 			InputMemoryStream packet;
-			int bytesRead = recv(current, packet.GetBufferPtr(), packet.GetCapacity(), 0);
-			if (bytesRead == SOCKET_ERROR)
+			int recvSize = recv(curr, packet.GetBufferPtr(), packet.GetCapacity(), 0);
+			if (recvSize == SOCKET_ERROR)
 			{
 				int lastError = WSAGetLastError();
 
@@ -138,13 +141,20 @@ bool ModuleNetworking::preUpdate()
 				}
 				else
 				{
+					// Other error handling
+
 					WLOG("Socket disconnected");
 
-					onSocketDisconnected(current);
+					// TODO(jesus): handle disconnections. Remember that a socket has been
+					// disconnected from its remote end either when recv() returned 0,
+					// or when it generated some errors such as ECONNRESET.
+					// Communicate detected disconnections to the subclass using the callback
+					// onSocketDisconnected().
+					onSocketDisconnected(curr);
 
 					for (std::vector<SOCKET>::iterator it = sockets.begin(); it != sockets.end(); ++it)
 					{
-						if ((*it) == current)
+						if ((*it) == curr)
 						{
 							sockets.erase(it);
 							break;
@@ -153,12 +163,12 @@ bool ModuleNetworking::preUpdate()
 					continue;
 				}
 			}
-			else if (bytesRead == 0)
+			else if (recvSize == 0)
 			{
-				onSocketDisconnected(current);
+				onSocketDisconnected(curr);
 				for (std::vector<SOCKET>::iterator it = sockets.begin(); it != sockets.end(); ++it)
 				{
-					if ((*it) == current)
+					if ((*it) == curr)
 					{
 						sockets.erase(it);
 						break;
@@ -166,15 +176,18 @@ bool ModuleNetworking::preUpdate()
 				}
 				continue;
 			}
+
 			else // Success
 			{
 				// Process received data
-				packet.SetSize(bytesRead);
-				onSocketReceivedData(current, packet);
+				packet.SetSize((uint32)recvSize);
+				onSocketReceivedData(curr, packet);
+
 			}
 
 		}
 	}
+
 	// TODO(jesus): Finally, remove all disconnected sockets from the list
 	// of managed sockets.
 
@@ -199,19 +212,16 @@ bool ModuleNetworking::cleanUp()
 	return true;
 }
 
-bool ModuleNetworking::sendPacket(const OutputMemoryStream& packet, SOCKET socket)
-{
-	int result = send(socket, packet.GetBufferPtr(), packet.GetSize(), 0);
-	if (result == SOCKET_ERROR)
-	{
-		reportError("send");
-		return false;
-	}
-	return true;
-}
-
 void ModuleNetworking::addSocket(SOCKET socket)
 {
 	sockets.push_back(socket);
-	DLOG("addSocket(): socked added");
+}
+
+void ModuleNetworking::SendMessageServer(const char* msg, uint32 type, SOCKET socket)
+{
+	OutputMemoryStream stream;
+	stream << ServerMessage::ChatMsg;
+	stream << msg;
+	stream << type;
+	sendPacket(stream, socket);
 }

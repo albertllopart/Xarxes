@@ -156,11 +156,33 @@ void ModuleNetworkingServer::onSocketReceivedData(SOCKET socket, const InputMemo
 		std::string playerName;
 		packet >> playerName;
 
-		for (auto& connectedSocket : connectedSockets)	
+		for (auto& connectedSocket : connectedSockets)
 		{
 			if (connectedSocket.socket == socket)
 			{
-				connectedSocket.playerName = playerName;
+				OutputMemoryStream packet;
+				for (auto& client : connectedSockets)
+				{
+					if (client.playerName == playerName)
+					{
+						packet << ServerMessage::Rejected;
+						packet << "Username already taken!";
+						sendPacket(packet, socket);
+						onSocketDisconnected(socket);
+						break;
+					}
+				}
+				packet << ServerMessage::Welcome;
+				packet << "Welcome home buddy";
+
+				sendPacket(packet, socket);
+
+				for (auto& client : connectedSockets)
+				{
+					std::string user = " ";
+					user += playerName += " joined ";
+					SendMessageServer(user.c_str(), 2u, client.socket);
+				}
 			}
 		}
 	}
