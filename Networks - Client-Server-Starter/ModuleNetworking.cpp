@@ -217,11 +217,11 @@ void ModuleNetworking::addSocket(SOCKET socket)
 	sockets.push_back(socket);
 }
 
-void ModuleNetworking::SendMessageServer(const char* msg, uint32 type, SOCKET socket)
+void ModuleNetworking::SendMessageServer(const char* msg, SOCKET socket)
 {
 	OutputMemoryStream stream;
 	stream << ServerMessage::ChatMsg;
 	stream << msg;
-	stream << type;
+	
 	sendPacket(stream, socket);
 }

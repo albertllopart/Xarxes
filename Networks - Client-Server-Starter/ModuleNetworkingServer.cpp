@@ -181,7 +181,7 @@ void ModuleNetworkingServer::onSocketReceivedData(SOCKET socket, const InputMemo
 				{
 					std::string user = " ";
 					user += playerName += " joined ";
-					SendMessageServer(user.c_str(), 2u, client.socket);
+					SendMessageServer(user.c_str(), client.socket);
 				}
 			}
 		}
