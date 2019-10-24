@@ -158,9 +158,10 @@ void ModuleNetworkingServer::onSocketReceivedData(SOCKET socket, const InputMemo
 
 		for (auto& connectedSocket : connectedSockets)
 		{
+			OutputMemoryStream packet;
 			if (connectedSocket.socket == socket)
 			{
-				OutputMemoryStream packet;
+				
 				for (auto& client : connectedSockets)
 				{
 					if (client.playerName == playerName)
@@ -172,17 +173,17 @@ void ModuleNetworkingServer::onSocketReceivedData(SOCKET socket, const InputMemo
 						break;
 					}
 				}
-				packet << ServerMessage::Welcome;
-				packet << "Welcome home buddy";
+			}
+			packet << ServerMessage::Welcome;
+			packet << "Welcome home buddy";
 
-				sendPacket(packet, socket);
+			sendPacket(packet, socket);
 
-				for (auto& client : connectedSockets)
-				{
-					std::string user = " ";
-					user += playerName += " joined ";
-					SendMessageServer(user.c_str(), client.socket);
-				}
+			for (auto& client : connectedSockets)
+			{
+				std::string user = " ";
+				user += playerName += " joined ";
+				SendMessageServer(user.c_str(), client.socket);
 			}
 		}
 	}
